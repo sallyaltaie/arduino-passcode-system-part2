@@ -39,6 +39,7 @@ static uint8_t access_time_expired(void);
 static void update_red_blink(void);
 static void blink_green_once(void);
 static void update_green_blink(void);
+static void app_rfid_check(void);
 
 
 static char cmd_buffer[CMD_BUFFER_SIZE];
@@ -131,6 +132,48 @@ static void update_green_blink(void)
     }
 }
 
+static void app_rfid_check(void)
+{
+    uint8_t atqa[2];
+    uint8_t atqa_len = 0;
+    mfrc522_uid_t uid;
+    mfrc522_status_t status;
+
+    // First, ask the reader if a tag is nearby
+    status = mfrc522_request_a(atqa, &atqa_len);
+    if (status != MFRC522_OK)
+    {
+        return; // no tag was found
+    }
+
+    // Next, read the tag's unique ID (UID)
+    status = mfrc522_anticoll_select(&uid);
+    if (status != MFRC522_OK)
+    {
+        return; // the tag could not be read
+    }
+
+    // Then, send the UID to the serial monitor
+    uart_write_string("RFID UID: ");
+    for (uint8_t i = 0; i < uid.size; i++)
+    {
+        uint8_t value = uid.uid[i];
+        char buffer[3];
+        buffer[0] = "0123456789ABCDEF"[(value >> 4) & 0x0F];
+        buffer[1] = "0123456789ABCDEF"[value & 0x0F];
+        buffer[2] = '\0';
+        uart_write_string(buffer);
+        if (i < uid.size - 1)
+        {
+            uart_write_string(" ");
+        }
+    }
+    uart_write_string("\n");
+
+    // Finally, tell the tag to stop sending data
+    mfrc522_halt();
+}
+
 static uint8_t pin_is_correct(void)
 {
     return pin_code_matches(entered_pin);
@@ -206,7 +249,7 @@ void app_init(void)
     // PIN
     pin_code_init();
 
-    // starta systemet i IDLE
+    // start the system in IDLE
     set_state(STATE_IDLE);
 
     uart_init(UART_BAUDRATE);
@@ -222,6 +265,7 @@ void app_run(void)
     switch (current_state)
     {
         case STATE_IDLE:
+            app_rfid_check();
             // Only the green start button is active in this state.
             if (green_button_pressed())
             {
