@@ -7,6 +7,8 @@
 #include "keypad.h"
 #include "pin_code.h"
 #include "command.h"
+#include "spi.h"
+#include "mfrc522.h"
 
 #define CMD_BUFFER_SIZE 32
 #define RED_BLINK_INTERVAL_MS 500UL
@@ -196,6 +198,10 @@ void app_init(void)
 
     // timer
     millis_init();
+
+    // RFID
+    spi_init();
+    mfrc522_init();
 
     // PIN
     pin_code_init();
