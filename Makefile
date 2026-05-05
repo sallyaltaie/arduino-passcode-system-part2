@@ -23,7 +23,8 @@ SOURCES=main.c \
 	src/keypad.c \
 	src/mfrc522.c \
 	src/i2c.c \
-	src/spi.c
+	src/spi.c \
+	src/shift_register.c
 
 OUTPUTDIR=build
 OBJS=$(addprefix $(OUTPUTDIR)/,$(SOURCES:.c=.o))

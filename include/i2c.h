@@ -1,5 +1,5 @@
-#ifndef TWI_H
-#define TWI_H
+#ifndef I2C_H
+#define I2C_H
 
 #include <stdint.h>
 

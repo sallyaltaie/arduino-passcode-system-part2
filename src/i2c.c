@@ -1,4 +1,4 @@
-#include "twi.h"
+#include "i2c.h"
 #include <avr/io.h>
 
 #ifndef F_CPU

@@ -11,4 +11,8 @@ void green_led_on(void);
 void green_led_off(void);
 void green_led_toggle(void);
 
+void blue_led_on(void);
+void blue_led_off(void);
+void blue_led_toggle(void);
+
 #endif

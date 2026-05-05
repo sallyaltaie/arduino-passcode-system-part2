@@ -1,5 +1,6 @@
 #include "keypad.h"
 #include "pins.h"
+#include "shift_register.h"
 
 #include <stdint.h>
 #include <util/delay.h>
@@ -14,32 +15,19 @@ static const char keypad_map[4][4] = {
 
 static void keypad_rowsHigh(void)
 {
-    KEYPAD_ROW_PORT |= (1U << KEYPAD_R1) |
-                       (1U << KEYPAD_R2) |
-                       (1U << KEYPAD_R3) |
-                       (1U << KEYPAD_R4);
+    // Set all row bits in shift register to 1 (high)
+    shift_register_write(0x0F);  // Bits 0-3 are the row pins
 }
 
 static void keypad_rowLow(uint8_t row)
 {
-    keypad_rowsHigh();
-
-    switch (row)
+    // Set all rows high first
+    shift_register_write(0x0F);
+    
+    // Then clear the bit for the selected row
+    if (row < 4)
     {
-        case 0:
-            KEYPAD_ROW_PORT &= ~(1U << KEYPAD_R1);
-            break;
-        case 1:
-            KEYPAD_ROW_PORT &= ~(1U << KEYPAD_R2);
-            break;
-        case 2:
-            KEYPAD_ROW_PORT &= ~(1U << KEYPAD_R3);
-            break;
-        case 3:
-            KEYPAD_ROW_PORT &= ~(1U << KEYPAD_R4);
-            break;
-        default:
-            break;
+        shift_register_clear_bit(row);
     }
 }
 
@@ -77,13 +65,9 @@ static char keypad_getKey(void)
 
 void keypad_init(void)
 {
-    // Configure rows as outputs, initially high
-    KEYPAD_ROW_DDR |= (1U << KEYPAD_R1) |
-                      (1U << KEYPAD_R2) |
-                      (1U << KEYPAD_R3) |
-                      (1U << KEYPAD_R4);
-
-    keypad_rowsHigh();
+    // Initialize shift register for row control 
+    shift_register_init();
+    shift_register_write(0x0F);
 
     // Configure columns as inputs with pull-ups
     KEYPAD_COL_DDR &= ~((1U << KEYPAD_C1) |
