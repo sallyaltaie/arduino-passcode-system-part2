@@ -1,0 +1,12 @@
+[wokwi]
+version = 1
+firmware = "build/avrdemo.hex"
+gdbServerPort = 3333
+
+[serial]
+# Let Wokwi pick the virtual port and match the firmware baud
+port = "auto"
+baud = 9600
+
+[gdb]
+port = 3333

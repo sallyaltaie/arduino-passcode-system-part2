@@ -1,0 +1,10 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define F_CPU 16000000UL
+#define UART_BAUDRATE 9600UL
+#define PIN_LENGTH 4
+#define INPUT_TIMEOUT_MS 5000UL
+#define ACCESS_GRANTED_MS 3000UL
+
+#endif
