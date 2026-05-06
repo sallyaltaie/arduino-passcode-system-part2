@@ -10,6 +10,7 @@
 #include "spi.h"
 #include "mfrc522.h"
 #include "rtc.h"
+#include "buzzer.h"
 
 #define CMD_BUFFER_SIZE 32
 #define RED_BLINK_INTERVAL_MS 500UL
@@ -249,6 +250,9 @@ void app_init(void)
 
     // RTC
     rtc_init();
+
+    // Buzzer
+    buzzer_init();
 
     // PIN
     pin_code_init();

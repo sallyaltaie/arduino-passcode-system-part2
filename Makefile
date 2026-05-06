@@ -24,6 +24,7 @@ SOURCES=main.c \
 	src/mfrc522.c \
 	src/i2c.c \
 	src/rtc.c \
+	src/buzzer.c \
 	src/spi.c \
 	src/shift_register.c \
 	src/servo.c

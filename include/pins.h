@@ -46,4 +46,9 @@
 #define SERVO_PORT   PORTC
 #define SERVO_PIN    PC0  // A0 on Arduino Uno
 
+// Buzzer control pin
+#define BUZZER_DDR   DDRC
+#define BUZZER_PORT  PORTC
+#define BUZZER_PIN   PC1  // A1 on Arduino Uno
+
 #endif
