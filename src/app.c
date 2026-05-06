@@ -9,6 +9,7 @@
 #include "command.h"
 #include "spi.h"
 #include "mfrc522.h"
+#include "rtc.h"
 
 #define CMD_BUFFER_SIZE 32
 #define RED_BLINK_INTERVAL_MS 500UL
@@ -245,6 +246,9 @@ void app_init(void)
     // RFID
     spi_init();
     mfrc522_init();
+
+    // RTC
+    rtc_init();
 
     // PIN
     pin_code_init();

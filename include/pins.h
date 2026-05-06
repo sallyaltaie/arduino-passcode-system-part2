@@ -41,4 +41,9 @@
 #define LED_GREEN_BIT 5
 #define LED_BLUE_BIT 6
 
+// Servo control pin
+#define SERVO_DDR    DDRC
+#define SERVO_PORT   PORTC
+#define SERVO_PIN    PC0  // A0 on Arduino Uno
+
 #endif
