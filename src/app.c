@@ -49,7 +49,7 @@ static unsigned char cmd_index = 0;
 
 static uint8_t green_button_pressed(void)
 {
-    return (PINB & (1U << GREEN_BUTTON_PIN)) == 0;
+    return (GREEN_BUTTON_PINREG & (1U << GREEN_BUTTON_PIN)) == 0;
 }
 
 static void reset_input(void)

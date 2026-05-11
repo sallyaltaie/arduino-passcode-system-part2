@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include "mfrc522.h"
+#include "pins.h"
 #include "spi.h"
 
 /* MFRC522 connections on Arduino:
@@ -8,15 +9,8 @@
    SCK    -> D13 / PB5
    MOSI   -> D11 / PB3
    MISO   -> D12 / PB4
-   RST    -> D9  / PB1
+   RST    -> D8  / PB0
 */
-#define MFRC522_CS_DDR   DDRB
-#define MFRC522_CS_PORT  PORTB
-#define MFRC522_CS_PIN   PB2
-
-#define MFRC522_RST_DDR  DDRB
-#define MFRC522_RST_PORT PORTB
-#define MFRC522_RST_PIN  PB1
 
 static void mfrc522_cs_low(void)
 {

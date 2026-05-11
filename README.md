@@ -19,13 +19,13 @@ A homework project for Arduino Uno / ATmega328P. This system extends a PIN lock 
 - 4x4 keypad
 - MFRC522 RFID reader
 - RGB LED
-- PB0 start button with internal pull-up
+- A0 start button with internal pull-up
 
 ## Shift register pins
 
-- `DS` -> `PD0`
-- `SHCP` -> `PD1`
-- `STCP` -> `PB5`
+- `DS` -> `D11 / PB3`
+- `SHCP` -> `D13 / PB5`
+- `STCP` -> `D2 / PD2`
 
 Shift register bit use:
 
@@ -40,7 +40,7 @@ Shift register bit use:
 - `MOSI` -> `PB3`
 - `MISO` -> `PB4`
 - `SCK` -> `PB5`
-- `RST` -> `PB1`
+- `RST` -> `PB0`
 
 ## Build
 
@@ -86,4 +86,3 @@ NEW PIN;1772;1234
 
 ## Author
 Sally Altaie
-
