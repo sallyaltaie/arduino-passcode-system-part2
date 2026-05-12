@@ -49,7 +49,6 @@ static uint8_t access_time_expired(void);
 static void update_red_blink(void);
 static void blink_key_feedback(void);
 static void update_key_feedback(void);
-static void blink_blue_once(void);
 static void update_blue_blink(void);
 static void buzz_error_once(void);
 static void update_buzzer_error(void);
@@ -161,13 +160,6 @@ static void update_key_feedback(void)
     }
 }
 
-static void blink_blue_once(void)
-{
-    blue_led_on();
-    blue_blink_time = millis();
-    blue_blink_active = 1;
-}
-
 static void update_blue_blink(void)
 {
     if (blue_blink_active && ((millis() - blue_blink_time) >= BLUE_RFID_BLINK_MS))
@@ -249,11 +241,14 @@ void app_run(void)
         case STATE_IDLE:
             if (app_rfid_check())
             {
-                blink_blue_once();
+                set_state(STATE_ACCESS_GRANTED);
             }
-            update_blue_blink();
-            update_buzzer_error();
-            set_state(STATE_INPUT_AWAIT);
+            else
+            {
+                update_blue_blink();
+                update_buzzer_error();
+                set_state(STATE_INPUT_AWAIT);
+            }
             break;
 
         case STATE_INPUT_AWAIT:
@@ -262,7 +257,8 @@ void app_run(void)
 
             if (app_rfid_check())
             {
-                blink_blue_once();
+                set_state(STATE_ACCESS_GRANTED);
+                break;
             }
             update_blue_blink();
             update_buzzer_error();
