@@ -15,6 +15,7 @@ BIN=avrdemo
 SOURCES=main.c \
 	src/app.c \
 	src/app_console.c \
+	src/app_rfid.c \
 	src/command.c \
 	src/led.c \
 	src/pin_code.c \

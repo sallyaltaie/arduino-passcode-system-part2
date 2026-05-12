@@ -1,5 +1,6 @@
 #include "app.h"
 #include "app_console.h"
+#include "app_rfid.h"
 #include "config.h"
 #include "led.h"
 #include "pins.h"
@@ -8,14 +9,12 @@
 #include "keypad.h"
 #include "pin_code.h"
 #include "spi.h"
-#include "mfrc522.h"
 #include "rtc.h"
 #include "buzzer.h"
 
 #define RED_BLINK_INTERVAL_MS 500UL
 #define GREEN_KEY_BLINK_MS 100UL
 #define BLUE_RFID_BLINK_MS 150UL
-#define RFID_COOLDOWN_MS 1000UL
 
 // State machine states for PIN access system
 typedef enum {
@@ -32,7 +31,6 @@ static millis_t state_start_time;
 static millis_t red_blink_time;
 static millis_t green_blink_time;
 static millis_t blue_blink_time;
-static millis_t last_rfid_read_time;
 static uint8_t green_blink_active;
 static uint8_t blue_blink_active;
 
@@ -47,7 +45,6 @@ static void blink_green_once(void);
 static void update_green_blink(void);
 static void blink_blue_once(void);
 static void update_blue_blink(void);
-static void app_rfid_check(void);
 
 static uint8_t green_button_pressed(void)
 {
@@ -158,56 +155,6 @@ static void update_blue_blink(void)
     }
 }
 
-static void app_rfid_check(void)
-{
-    uint8_t atqa[2];
-    uint8_t atqa_len = 0;
-    mfrc522_uid_t uid;
-    mfrc522_status_t status;
-
-    if ((millis() - last_rfid_read_time) < RFID_COOLDOWN_MS)
-    {
-        return;
-    }
-
-    // First, ask the reader if a tag is nearby
-    status = mfrc522_request_a(atqa, &atqa_len);
-    if (status != MFRC522_OK)
-    {
-        return; // no tag was found
-    }
-
-    // Next, read the tag's unique ID (UID)
-    status = mfrc522_anticoll_select(&uid);
-    if (status != MFRC522_OK)
-    {
-        return; // the tag could not be read
-    }
-
-    // Then, send the UID to the serial monitor
-    uart_write_string("RFID UID: ");
-    for (uint8_t i = 0; i < uid.size; i++)
-    {
-        uint8_t value = uid.uid[i];
-        char buffer[3];
-        buffer[0] = "0123456789ABCDEF"[(value >> 4) & 0x0F];
-        buffer[1] = "0123456789ABCDEF"[value & 0x0F];
-        buffer[2] = '\0';
-        uart_write_string(buffer);
-        if (i < uid.size - 1)
-        {
-            uart_write_string(" ");
-        }
-    }
-    uart_write_string("\n");
-
-    last_rfid_read_time = millis();
-    blink_blue_once();
-
-    // Finally, tell the tag to stop sending data
-    mfrc522_halt();
-}
-
 static uint8_t pin_is_correct(void)
 {
     return pin_code_matches(entered_pin);
@@ -230,7 +177,7 @@ void app_init(void)
     led_init();
 
     // RFID
-    mfrc522_init();
+    app_rfid_init();
 
     // RTC
     rtc_init();
@@ -258,7 +205,10 @@ void app_run(void)
     switch (current_state)
     {
         case STATE_IDLE:
-            app_rfid_check();
+            if (app_rfid_check())
+            {
+                blink_blue_once();
+            }
             update_blue_blink();
             // Only the green start button is active in this state.
             if (green_button_pressed())
