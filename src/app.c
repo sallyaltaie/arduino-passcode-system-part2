@@ -8,9 +8,12 @@
 #include "millis.h"
 #include "keypad.h"
 #include "pin_code.h"
+#include "servo.h"
 #include "spi.h"
 #include "rtc.h"
 #include "buzzer.h"
+
+#include <stdio.h>
 
 #define RED_BLINK_INTERVAL_MS 500UL
 #define GREEN_KEY_BLINK_MS 100UL
@@ -94,6 +97,7 @@ static void set_state(app_state_t new_state)
         red_led_on();
         green_led_off();
         blue_led_off();
+        servo_close();
     }
     else if (new_state == STATE_INPUT_AWAIT)
     {
@@ -106,14 +110,28 @@ static void set_state(app_state_t new_state)
     }
     else if (new_state == STATE_ACCESS_GRANTED)
     {
+        rtc_time_t now;
+
         green_blink_active = 0;
         blue_blink_active = 0;
         red_led_off();
         green_led_on();
         blue_led_off();
+        servo_open();
+
+        if (rtc_read_time(&now) == 0)
+        {
+            char buffer[32];
+            snprintf(buffer, sizeof(buffer), "Time: %02u:%02u:%02u\n",
+                     now.hours, now.minutes, now.seconds);
+            uart_write_string(buffer);
+        }
+        else
+        {
+            uart_write_string("RTC read failed\n");
+        }
     }
 }
-
 static void update_red_blink(void)
 {
     if ((millis() - red_blink_time) >= RED_BLINK_INTERVAL_MS)
@@ -185,6 +203,9 @@ void app_init(void)
     // Buzzer
     buzzer_init();
 
+    // Servo
+    servo_init();
+
     // PIN
     pin_code_init();
 
@@ -248,6 +269,7 @@ void app_run(void)
                         }
                         else
                         {
+                            buzzer_scream();
                             set_state(STATE_IDLE);
                         }
                     }
