@@ -1,4 +1,5 @@
 #include "app.h"
+#include "app_console.h"
 #include "config.h"
 #include "led.h"
 #include "pins.h"
@@ -6,15 +7,15 @@
 #include "millis.h"
 #include "keypad.h"
 #include "pin_code.h"
-#include "command.h"
 #include "spi.h"
 #include "mfrc522.h"
 #include "rtc.h"
 #include "buzzer.h"
 
-#define CMD_BUFFER_SIZE 32
 #define RED_BLINK_INTERVAL_MS 500UL
 #define GREEN_KEY_BLINK_MS 100UL
+#define BLUE_RFID_BLINK_MS 150UL
+#define RFID_COOLDOWN_MS 1000UL
 
 // State machine states for PIN access system
 typedef enum {
@@ -30,7 +31,10 @@ static uint8_t entered_length;
 static millis_t state_start_time;
 static millis_t red_blink_time;
 static millis_t green_blink_time;
+static millis_t blue_blink_time;
+static millis_t last_rfid_read_time;
 static uint8_t green_blink_active;
+static uint8_t blue_blink_active;
 
 // Helper functions for PIN input handling
 static void reset_input(void);
@@ -41,11 +45,9 @@ static uint8_t access_time_expired(void);
 static void update_red_blink(void);
 static void blink_green_once(void);
 static void update_green_blink(void);
+static void blink_blue_once(void);
+static void update_blue_blink(void);
 static void app_rfid_check(void);
-
-
-static char cmd_buffer[CMD_BUFFER_SIZE];
-static unsigned char cmd_index = 0;
 
 static uint8_t green_button_pressed(void)
 {
@@ -91,21 +93,27 @@ static void set_state(app_state_t new_state)
     {
         reset_input();
         green_blink_active = 0;
+        blue_blink_active = 0;
         red_led_on();
         green_led_off();
+        blue_led_off();
     }
     else if (new_state == STATE_INPUT_AWAIT)
     {
         red_blink_time = millis();
         green_blink_active = 0;
+        blue_blink_active = 0;
         red_led_on();
         green_led_off();
+        blue_led_off();
     }
     else if (new_state == STATE_ACCESS_GRANTED)
     {
         green_blink_active = 0;
+        blue_blink_active = 0;
         red_led_off();
         green_led_on();
+        blue_led_off();
     }
 }
 
@@ -134,12 +142,33 @@ static void update_green_blink(void)
     }
 }
 
+static void blink_blue_once(void)
+{
+    blue_led_on();
+    blue_blink_time = millis();
+    blue_blink_active = 1;
+}
+
+static void update_blue_blink(void)
+{
+    if (blue_blink_active && ((millis() - blue_blink_time) >= BLUE_RFID_BLINK_MS))
+    {
+        blue_led_off();
+        blue_blink_active = 0;
+    }
+}
+
 static void app_rfid_check(void)
 {
     uint8_t atqa[2];
     uint8_t atqa_len = 0;
     mfrc522_uid_t uid;
     mfrc522_status_t status;
+
+    if ((millis() - last_rfid_read_time) < RFID_COOLDOWN_MS)
+    {
+        return;
+    }
 
     // First, ask the reader if a tag is nearby
     status = mfrc522_request_a(atqa, &atqa_len);
@@ -172,6 +201,9 @@ static void app_rfid_check(void)
     }
     uart_write_string("\n");
 
+    last_rfid_read_time = millis();
+    blink_blue_once();
+
     // Finally, tell the tag to stop sending data
     mfrc522_halt();
 }
@@ -179,55 +211,6 @@ static void app_rfid_check(void)
 static uint8_t pin_is_correct(void)
 {
     return pin_code_matches(entered_pin);
-}
-
-
-// Process UART commands, only allowed in IDLE state
-static void process_command(char *cmd)
-{
-    if (current_state == STATE_IDLE)
-    {
-        command_process(cmd);
-    }
-    else
-    {
-        uart_write_string("PIN can only be changed in IDLE\n");
-    }
-}
-
-// Handle incoming UART data and process commands
-static void handle_uart(void)
-{
-    char c;
-
-    while (uart_read_char(&c))
-    {
-        uart_write_char(c);
-
-        if (c == '\r' || c == '\n')
-        {
-            uart_write_string("\n");
-
-            if (cmd_index > 0)
-            {
-                cmd_buffer[cmd_index] = '\0';
-                process_command(cmd_buffer);
-                cmd_index = 0;
-            }
-        }
-        else
-        {
-            if (cmd_index < (CMD_BUFFER_SIZE - 1))
-            {
-                cmd_buffer[cmd_index++] = c;
-            }
-            else
-            {
-                cmd_index = 0;
-                uart_write_string("\nCommand too long\n");
-            }
-        }
-    }
 }
 
 void app_init(void)
@@ -262,6 +245,7 @@ void app_init(void)
     set_state(STATE_IDLE);
 
     uart_init(UART_BAUDRATE);
+    app_console_init();
     uart_write_string("System ready\n");
     uart_write_string("Type: help\n");
 }
@@ -269,12 +253,13 @@ void app_init(void)
 // Main application loop - handles state machine
 void app_run(void)
 {
-    handle_uart();
+    app_console_handle(current_state == STATE_IDLE);
 
     switch (current_state)
     {
         case STATE_IDLE:
             app_rfid_check();
+            update_blue_blink();
             // Only the green start button is active in this state.
             if (green_button_pressed())
             {

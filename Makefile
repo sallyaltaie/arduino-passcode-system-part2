@@ -14,6 +14,7 @@ PORT=/dev/tty.usbmodem11201
 BIN=avrdemo
 SOURCES=main.c \
 	src/app.c \
+	src/app_console.c \
 	src/command.c \
 	src/led.c \
 	src/pin_code.c \

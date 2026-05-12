@@ -1,87 +1,67 @@
 #include "servo.h"
 #include "pins.h"
+
 #include <avr/io.h>
-#include <util/delay.h>
 
-// Servo driver using a blocking 20ms pulse period on PC0.
-// This avoids Timer2/MOSI conflict with the RFID/SPI hardware.
-#define SERVO_PERIOD_US       20000u
-#define SERVO_MIN_PULSE_US    1000u
-#define SERVO_MAX_PULSE_US    2000u
+#define SERVO_PERIOD_TICKS     40000u
+#define SERVO_0_DEG_TICKS       2000u
+#define SERVO_180_DEG_TICKS     4000u
 
-static uint16_t servo_angle_to_pulse(uint8_t angle)
+static uint16_t servo_angle_to_ticks(uint8_t angle)
 {
-    if (angle > 180)
+    if (angle > 180U)
     {
-        angle = 180;
+        angle = 180U;
     }
 
-    return SERVO_MIN_PULSE_US + ((uint32_t)angle * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US)) / 180;
+    return SERVO_0_DEG_TICKS +
+           ((uint32_t)angle * (SERVO_180_DEG_TICKS - SERVO_0_DEG_TICKS)) / 180U;
 }
 
-static void servo_pulse(uint16_t pulse_us)
+static void servo_set_pulse_ticks(uint16_t pulse_ticks)
 {
-    uint16_t remaining = SERVO_PERIOD_US - pulse_us;
-
-    SERVO_PORT |= (1U << SERVO_PIN);
-
-    if (pulse_us > 1000u)
+    if (pulse_ticks < SERVO_0_DEG_TICKS)
     {
-        _delay_ms(1);
-        _delay_us(pulse_us - 1000u);
-    }
-    else
-    {
-        _delay_us(pulse_us);
+        pulse_ticks = SERVO_0_DEG_TICKS;
     }
 
-    SERVO_PORT &= ~(1U << SERVO_PIN);
-
-    while (remaining >= 1000u)
+    if (pulse_ticks > SERVO_180_DEG_TICKS)
     {
-        _delay_ms(1);
-        remaining -= 1000u;
+        pulse_ticks = SERVO_180_DEG_TICKS;
     }
 
-    while (remaining > 0u)
-    {
-        _delay_us(1);
-        remaining--;
-    }
+    OCR1A = pulse_ticks;
 }
 
 void servo_init(void)
 {
+    // Timer1 PWM on OC1A (PB1 / Arduino D9).
     SERVO_DDR |= (1U << SERVO_PIN);
     SERVO_PORT &= ~(1U << SERVO_PIN);
+
+    TCCR1A = 0;
+    TCCR1B = 0;
+
+    // Fast PWM, mode 14: TOP = ICR1.
+    TCCR1A = (1U << WGM11) | (1U << COM1A1);
+    TCCR1B = (1U << WGM12) | (1U << WGM13) | (1U << CS11);
+
+    // 16 MHz / 8 prescaler = 2 MHz => 0.5 us per tick.
+    ICR1 = SERVO_PERIOD_TICKS;
+    servo_set_pulse_ticks(SERVO_180_DEG_TICKS);
 }
 
 void servo_open(void)
 {
-    uint16_t pulse = servo_angle_to_pulse(180);
-
-    for (uint8_t i = 0; i < 20; i++)
-    {
-        servo_pulse(pulse);
-    }
+    servo_set_pulse_ticks(SERVO_0_DEG_TICKS);
 }
 
 void servo_close(void)
 {
-    uint16_t pulse = servo_angle_to_pulse(0);
-
-    for (uint8_t i = 0; i < 20; i++)
-    {
-        servo_pulse(pulse);
-    }
+    servo_set_pulse_ticks(SERVO_180_DEG_TICKS);
 }
 
 void servo_set_angle(uint8_t angle)
 {
-    uint16_t pulse = servo_angle_to_pulse(angle);
-
-    for (uint8_t i = 0; i < 20; i++)
-    {
-        servo_pulse(pulse);
-    }
+    servo_set_pulse_ticks(servo_angle_to_ticks(angle));
 }

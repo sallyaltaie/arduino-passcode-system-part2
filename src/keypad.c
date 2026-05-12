@@ -13,21 +13,20 @@ static const char keypad_map[4][4] = {
     {'*', '0', '#', 'D'}
 };
 
+#define KEYPAD_ROW_MASK 0x0FU
+
 static void keypad_rowsHigh(void)
 {
-    for (uint8_t row = 0U; row < 4U; row++)
-    {
-        shift_register_set_bit(row);
-    }
+    shift_register_write(shift_register_get_state() | KEYPAD_ROW_MASK);
 }
 
 static void keypad_rowLow(uint8_t row)
 {
-    keypad_rowsHigh();
-
     if (row < 4)
     {
-        shift_register_clear_bit(row);
+        uint8_t state = shift_register_get_state() | KEYPAD_ROW_MASK;
+        state &= (uint8_t)~(1U << row);
+        shift_register_write(state);
     }
 }
 

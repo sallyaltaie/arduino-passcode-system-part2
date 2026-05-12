@@ -7,7 +7,7 @@ Arduino Nano / ATmega328P SPI pins:
 - D11 = PB3 = MOSI
 - D12 = PB4 = MISO
 - D13 = PB5 = SCK
-- D9  = PB1 = RST  (handled in main/mfrc522 driver)
+- D8  = PB0 = RST  (handled in mfrc522 driver)
 */
 
 void spi_init(void)
