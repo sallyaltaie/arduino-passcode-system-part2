@@ -1,11 +1,11 @@
 # Arduino Uno Shift Register Access Control
 
-A homework project for Arduino Uno / ATmega328P. This system extends a PIN lock with a 74HC595 shift register, RGB LEDs, RFID, and support for future RTC, buzzer, and servo drivers.
+A homework project for Arduino Uno / ATmega328P. This system extends a PIN lock with a 74HC595 latch, RGB LEDs, RFID, and support for future RTC, buzzer, and servo drivers.
 
 ## What it does
 
 - PIN access state machine: `IDLE`, `INPUT_AWAIT`, `ACCESS_GRANTED`
-- 4x4 keypad scanning using a shift register for row control
+- 4x4 keypad scanning using a 74HC595 latch for row control
 - RGB LED control through the 74HC595
 - UART PIN change command
 - EEPROM PIN storage
@@ -15,19 +15,19 @@ A homework project for Arduino Uno / ATmega328P. This system extends a PIN lock 
 ## Hardware overview
 
 - Arduino Uno / ATmega328P
-- 74HC595 shift register
+- 74HC595 latch
 - 4x4 keypad
 - MFRC522 RFID reader
 - RGB LED
 - A0 start button with internal pull-up
 
-## Shift register pins
+## Latch Pins
 
 - `DS` -> `D11 / PB3`
 - `SHCP` -> `D13 / PB5`
 - `STCP` -> `D2 / PD2`
 
-Shift register bit use:
+Latch bit use:
 
 - Rows 0–3: bits 0–3
 - Red LED: bit 4

@@ -25,7 +25,7 @@
 #define KEYPAD_C2          PD6
 #define KEYPAD_C3          PD5
 #define KEYPAD_C4          PD4
- 
+
 // Shift Register pins (74HC595)
 #define SHIFT_REGISTER_DS_DDR   DDRB
 #define SHIFT_REGISTER_DS_PORT  PORTB
@@ -35,9 +35,9 @@
 #define SHIFT_REGISTER_SHCP_PORT  PORTB
 #define SHIFT_REGISTER_SHCP_PIN   PB5
 
-#define SHIFT_REGISTER_STCP_DDR   DDRD
-#define SHIFT_REGISTER_STCP_PORT  PORTD
-#define SHIFT_REGISTER_STCP_PIN   PD2
+#define LATCH_DDR   DDRD
+#define LATCH_PORT  PORTD
+#define LATCH_PIN   PD2
 
 // LED bits in shift register 
 #define LED_RED_BIT 4

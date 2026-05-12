@@ -15,16 +15,16 @@ static const char keypad_map[4][4] = {
 
 static void keypad_rowsHigh(void)
 {
-    // Set all row bits in shift register to 1 (high)
-    shift_register_write(0x0F);  // Bits 0-3 are the row pins
+    for (uint8_t row = 0U; row < 4U; row++)
+    {
+        shift_register_set_bit(row);
+    }
 }
 
 static void keypad_rowLow(uint8_t row)
 {
-    // Set all rows high first
-    shift_register_write(0x0F);
-    
-    // Then clear the bit for the selected row
+    keypad_rowsHigh();
+
     if (row < 4)
     {
         shift_register_clear_bit(row);
@@ -65,9 +65,9 @@ static char keypad_getKey(void)
 
 void keypad_init(void)
 {
-    // Initialize shift register for row control 
+    // Initialize the latch used for row control.
     shift_register_init();
-    shift_register_write(0x0F);
+    keypad_rowsHigh();
 
     // Configure columns as inputs with pull-ups
     KEYPAD_COL_DDR &= ~((1U << KEYPAD_C1) |

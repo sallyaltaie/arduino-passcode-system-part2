@@ -2,66 +2,75 @@
 #include "pins.h"
 #include "shift_register.h"
 
-// Track LED state
-static uint8_t led_state = 0x00;
-
 void led_init(void)
 {
-    // Shift register is already initialized by keypad_init
-    // Just ensure LEDs are off
-    led_state = 0x00;
+    red_led_off();
+    green_led_off();
+    blue_led_off();
 }
 
 void red_led_on(void)
 {
-    led_state |= (1U << LED_RED_BIT);
-    shift_register_write(led_state);
+    shift_register_set_bit(LED_RED_BIT);
 }
 
 void red_led_off(void)
 {
-    led_state &= ~(1U << LED_RED_BIT);
-    shift_register_write(led_state);
+    shift_register_clear_bit(LED_RED_BIT);
 }
 
 void red_led_toggle(void)
 {
-    led_state ^= (1U << LED_RED_BIT);
-    shift_register_write(led_state);
+    if (shift_register_get_state() & (1U << LED_RED_BIT))
+    {
+        shift_register_clear_bit(LED_RED_BIT);
+    }
+    else
+    {
+        shift_register_set_bit(LED_RED_BIT);
+    }
 }
 
 void green_led_on(void)
 {
-    led_state |= (1U << LED_GREEN_BIT);
-    shift_register_write(led_state);
+    shift_register_set_bit(LED_GREEN_BIT);
 }
 
 void green_led_off(void)
 {
-    led_state &= ~(1U << LED_GREEN_BIT);
-    shift_register_write(led_state);
+    shift_register_clear_bit(LED_GREEN_BIT);
 }
 
 void green_led_toggle(void)
 {
-    led_state ^= (1U << LED_GREEN_BIT);
-    shift_register_write(led_state);
+    if (shift_register_get_state() & (1U << LED_GREEN_BIT))
+    {
+        shift_register_clear_bit(LED_GREEN_BIT);
+    }
+    else
+    {
+        shift_register_set_bit(LED_GREEN_BIT);
+    }
 }
 
 void blue_led_on(void)
 {
-    led_state |= (1U << LED_BLUE_BIT);
-    shift_register_write(led_state);
+    shift_register_set_bit(LED_BLUE_BIT);
 }
 
 void blue_led_off(void)
 {
-    led_state &= ~(1U << LED_BLUE_BIT);
-    shift_register_write(led_state);
+    shift_register_clear_bit(LED_BLUE_BIT);
 }
 
 void blue_led_toggle(void)
 {
-    led_state ^= (1U << LED_BLUE_BIT);
-    shift_register_write(led_state);
+    if (shift_register_get_state() & (1U << LED_BLUE_BIT))
+    {
+        shift_register_clear_bit(LED_BLUE_BIT);
+    }
+    else
+    {
+        shift_register_set_bit(LED_BLUE_BIT);
+    }
 }

@@ -232,20 +232,21 @@ static void handle_uart(void)
 
 void app_init(void)
 {
-    led_init();
-
     // Green start button as input with pull-up
     GREEN_BUTTON_DDR &= ~(1U << GREEN_BUTTON_PIN);
     GREEN_BUTTON_PORT |= (1U << GREEN_BUTTON_PIN);
 
-    // keypad
-    keypad_init();
-
     // timer
     millis_init();
 
-    // RFID
+    // SPI must be initialized before the shift register is used by keypad/LED.
     spi_init();
+
+    // keypad + shift register
+    keypad_init();
+    led_init();
+
+    // RFID
     mfrc522_init();
 
     // RTC
