@@ -10,8 +10,20 @@ static millis_t last_rfid_read_time;
 
 void app_rfid_init(void)
 {
+    char buffer[32];
+    uint8_t version;
+
     last_rfid_read_time = 0;
     mfrc522_init();
+    version = mfrc522_get_version();
+
+    buffer[0] = "0123456789ABCDEF"[(version >> 4) & 0x0F];
+    buffer[1] = "0123456789ABCDEF"[version & 0x0F];
+    buffer[2] = '\0';
+
+    uart_write_string("MFRC522 version: 0x");
+    uart_write_string(buffer);
+    uart_write_string("\n");
 }
 
 uint8_t app_rfid_check(void)

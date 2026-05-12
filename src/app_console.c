@@ -57,3 +57,8 @@ void app_console_handle(uint8_t commands_allowed)
         }
     }
 }
+
+uint8_t app_console_has_pending_input(void)
+{
+    return (cmd_index > 0U) || (uart_available() > 0U);
+}

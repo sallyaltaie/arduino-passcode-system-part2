@@ -16,8 +16,9 @@
 #include <stdio.h>
 
 #define RED_BLINK_INTERVAL_MS 500UL
-#define GREEN_KEY_BLINK_MS 100UL
+#define KEY_FEEDBACK_MS 100UL
 #define BLUE_RFID_BLINK_MS 150UL
+#define BUZZER_ERROR_MS 300UL
 
 // State machine states for PIN access system
 typedef enum {
@@ -32,10 +33,12 @@ static char entered_pin[4];
 static uint8_t entered_length;
 static millis_t state_start_time;
 static millis_t red_blink_time;
-static millis_t green_blink_time;
+static millis_t key_feedback_time;
 static millis_t blue_blink_time;
-static uint8_t green_blink_active;
+static millis_t buzzer_error_time;
+static uint8_t key_feedback_active;
 static uint8_t blue_blink_active;
+static uint8_t buzzer_error_active;
 
 // Helper functions for PIN input handling
 static void reset_input(void);
@@ -44,15 +47,12 @@ static uint8_t pin_is_complete(void);
 static uint8_t input_timeout_expired(void);
 static uint8_t access_time_expired(void);
 static void update_red_blink(void);
-static void blink_green_once(void);
-static void update_green_blink(void);
+static void blink_key_feedback(void);
+static void update_key_feedback(void);
 static void blink_blue_once(void);
 static void update_blue_blink(void);
-
-static uint8_t green_button_pressed(void)
-{
-    return (GREEN_BUTTON_PINREG & (1U << GREEN_BUTTON_PIN)) == 0;
-}
+static void buzz_error_once(void);
+static void update_buzzer_error(void);
 
 static void reset_input(void)
 {
@@ -92,7 +92,7 @@ static void set_state(app_state_t new_state)
     if (new_state == STATE_IDLE)
     {
         reset_input();
-        green_blink_active = 0;
+        key_feedback_active = 0;
         blue_blink_active = 0;
         red_led_on();
         green_led_off();
@@ -102,7 +102,7 @@ static void set_state(app_state_t new_state)
     else if (new_state == STATE_INPUT_AWAIT)
     {
         red_blink_time = millis();
-        green_blink_active = 0;
+        key_feedback_active = 0;
         blue_blink_active = 0;
         red_led_on();
         green_led_off();
@@ -112,11 +112,13 @@ static void set_state(app_state_t new_state)
     {
         rtc_time_t now;
 
-        green_blink_active = 0;
+        key_feedback_active = 0;
         blue_blink_active = 0;
+        buzzer_error_active = 0;
         red_led_off();
         green_led_on();
         blue_led_off();
+        buzzer_quiet();
         servo_open();
 
         if (rtc_read_time(&now) == 0)
@@ -141,19 +143,21 @@ static void update_red_blink(void)
     }
 }
 
-static void blink_green_once(void)
+static void blink_key_feedback(void)
 {
+    red_led_on();
     green_led_on();
-    green_blink_time = millis();
-    green_blink_active = 1;
+    key_feedback_time = millis();
+    key_feedback_active = 1;
 }
 
-static void update_green_blink(void)
+static void update_key_feedback(void)
 {
-    if (green_blink_active && ((millis() - green_blink_time) >= GREEN_KEY_BLINK_MS))
+    if (key_feedback_active && ((millis() - key_feedback_time) >= KEY_FEEDBACK_MS))
     {
         green_led_off();
-        green_blink_active = 0;
+        key_feedback_active = 0;
+        red_blink_time = millis();
     }
 }
 
@@ -173,6 +177,22 @@ static void update_blue_blink(void)
     }
 }
 
+static void buzz_error_once(void)
+{
+    buzzer_scream();
+    buzzer_error_time = millis();
+    buzzer_error_active = 1;
+}
+
+static void update_buzzer_error(void)
+{
+    if (buzzer_error_active && ((millis() - buzzer_error_time) >= BUZZER_ERROR_MS))
+    {
+        buzzer_quiet();
+        buzzer_error_active = 0;
+    }
+}
+
 static uint8_t pin_is_correct(void)
 {
     return pin_code_matches(entered_pin);
@@ -186,6 +206,9 @@ void app_init(void)
 
     // timer
     millis_init();
+
+    uart_init(UART_BAUDRATE);
+    app_console_init();
 
     // SPI must be initialized before the shift register is used by keypad/LED.
     spi_init();
@@ -212,8 +235,6 @@ void app_init(void)
     // start the system in IDLE
     set_state(STATE_IDLE);
 
-    uart_init(UART_BAUDRATE);
-    app_console_init();
     uart_write_string("System ready\n");
     uart_write_string("Type: help\n");
 }
@@ -221,7 +242,7 @@ void app_init(void)
 // Main application loop - handles state machine
 void app_run(void)
 {
-    app_console_handle(current_state == STATE_IDLE);
+    app_console_handle(1);
 
     switch (current_state)
     {
@@ -231,20 +252,28 @@ void app_run(void)
                 blink_blue_once();
             }
             update_blue_blink();
-            // Only the green start button is active in this state.
-            if (green_button_pressed())
-            {
-                set_state(STATE_INPUT_AWAIT);
-            }
+            update_buzzer_error();
+            set_state(STATE_INPUT_AWAIT);
             break;
 
         case STATE_INPUT_AWAIT:
         {
             char key;
 
-            // The start button is ignored here; only the keypad is used.
-            update_red_blink();
-            update_green_blink();
+            if (app_rfid_check())
+            {
+                blink_blue_once();
+            }
+            update_blue_blink();
+            update_buzzer_error();
+            if (key_feedback_active)
+            {
+                update_key_feedback();
+            }
+            else
+            {
+                update_red_blink();
+            }
 
             if (input_timeout_expired())
             {
@@ -256,7 +285,7 @@ void app_run(void)
 
                 if (key != '\0')
                 {
-                    blink_green_once();
+                    blink_key_feedback();
                     uart_write_string("Key: ");
                     uart_write_char(key);
                     uart_write_string("\n");
@@ -269,7 +298,8 @@ void app_run(void)
                         }
                         else
                         {
-                            buzzer_scream();
+                            uart_write_string("Wrong PIN\n");
+                            buzz_error_once();
                             set_state(STATE_IDLE);
                         }
                     }
@@ -282,6 +312,7 @@ void app_run(void)
             // Button and keypad input are ignored while access is granted.
             if (access_time_expired())
             {
+                green_led_off();
                 set_state(STATE_IDLE);
             }
             break;

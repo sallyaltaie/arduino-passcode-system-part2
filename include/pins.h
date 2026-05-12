@@ -40,9 +40,9 @@
 #define LATCH_PIN   PD2
 
 // LED bits in shift register 
-#define LED_RED_BIT 4
-#define LED_GREEN_BIT 5
-#define LED_BLUE_BIT 6
+#define LED_RED_BIT 5
+#define LED_GREEN_BIT 6
+#define LED_BLUE_BIT 7
 
 // Servo control pin
 #define SERVO_DDR    DDRB

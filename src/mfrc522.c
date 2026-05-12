@@ -244,6 +244,14 @@ mfrc522_status_t mfrc522_request_a(uint8_t *atqa, uint8_t *atqa_len)
     mfrc522_write_reg(BitFramingReg, 0x07);
 
     status = mfrc522_transceive(&cmd, 1, atqa, &back_len, &valid_bits);
+    if (status != MFRC522_OK)
+    {
+        // WUPA can wake cards that were previously halted.
+        cmd = PICC_CMD_WUPA;
+        back_len = 2;
+        valid_bits = 7;
+        status = mfrc522_transceive(&cmd, 1, atqa, &back_len, &valid_bits);
+    }
 
     if (status != MFRC522_OK)
     {
