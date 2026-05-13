@@ -30,9 +30,9 @@ A homework project for Arduino Uno / ATmega328P. This system extends a PIN lock 
 Latch bit use:
 
 - Rows 0–3: bits 0–3
-- Red LED: bit 4
-- Green LED: bit 5
-- Blue LED: bit 6
+- Red LED: bit 5
+- Green LED: bit 6
+- Blue LED: bit 7
 
 ## RFID SPI pins
 

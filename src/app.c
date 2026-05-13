@@ -10,7 +10,8 @@
 #include "pin_code.h"
 #include "servo.h"
 #include "spi.h"
-#include "rtc.h"
+#include "i2c.h"
+#include "ds1307.h"
 #include "buzzer.h"
 
 #include <stdio.h>
@@ -36,6 +37,7 @@ static millis_t red_blink_time;
 static millis_t key_feedback_time;
 static millis_t blue_blink_time;
 static millis_t buzzer_error_time;
+static millis_t rtc_print_time;
 static uint8_t key_feedback_active;
 static uint8_t blue_blink_active;
 static uint8_t buzzer_error_active;
@@ -52,6 +54,19 @@ static void update_key_feedback(void);
 static void update_blue_blink(void);
 static void buzz_error_once(void);
 static void update_buzzer_error(void);
+static void print_rtc_time(void);
+
+static void print_rtc_time(void)
+{
+    DateTime now;
+    char buffer[32];
+
+    ds1307_get_datetime(&now);
+
+    snprintf(buffer, sizeof(buffer), "Time: %02u:%02u:%02u\n",
+             now.hour, now.minute, now.second);
+    uart_write_string(buffer);
+}
 
 static void reset_input(void)
 {
@@ -109,8 +124,6 @@ static void set_state(app_state_t new_state)
     }
     else if (new_state == STATE_ACCESS_GRANTED)
     {
-        rtc_time_t now;
-
         key_feedback_active = 0;
         blue_blink_active = 0;
         buzzer_error_active = 0;
@@ -119,18 +132,6 @@ static void set_state(app_state_t new_state)
         blue_led_off();
         buzzer_quiet();
         servo_open();
-
-        if (rtc_read_time(&now) == 0)
-        {
-            char buffer[32];
-            snprintf(buffer, sizeof(buffer), "Time: %02u:%02u:%02u\n",
-                     now.hours, now.minutes, now.seconds);
-            uart_write_string(buffer);
-        }
-        else
-        {
-            uart_write_string("RTC read failed\n");
-        }
     }
 }
 static void update_red_blink(void)
@@ -192,6 +193,8 @@ static uint8_t pin_is_correct(void)
 
 void app_init(void)
 {
+    DateTime initial_time = {0, 0, 12, 1, 1, 1, 24};
+
     // Green start button as input with pull-up
     GREEN_BUTTON_DDR &= ~(1U << GREEN_BUTTON_PIN);
     GREEN_BUTTON_PORT |= (1U << GREEN_BUTTON_PIN);
@@ -213,7 +216,9 @@ void app_init(void)
     app_rfid_init();
 
     // RTC
-    rtc_init();
+    twi_init(100000UL);
+    ds1307_set_datetime(&initial_time);
+    ds1307_start_clock();
 
     // Buzzer
     buzzer_init();
@@ -226,6 +231,8 @@ void app_init(void)
 
     // start the system in IDLE
     set_state(STATE_IDLE);
+    rtc_print_time = millis();
+    print_rtc_time();
 
     uart_write_string("System ready\n");
     uart_write_string("Type: help\n");
@@ -235,6 +242,13 @@ void app_init(void)
 void app_run(void)
 {
     app_console_handle(1);
+
+    if (!app_console_has_pending_input() &&
+        ((millis() - rtc_print_time) >= 1000UL))
+    {
+        rtc_print_time = millis();
+        print_rtc_time();
+    }
 
     switch (current_state)
     {

@@ -6,10 +6,10 @@ AVRSIZE=avr-size
 OBJISP=avrdude
 MCU=atmega328p
 CFLAGS=-Wall -Wextra -Wundef -pedantic \
-	-Os -g -DF_CPU=16000000UL -mmcu=$(MCU) -DBAUD=19200 \
+	-Os -g -DF_CPU=16000000UL -mmcu=$(MCU) -DBAUD=9600 \
 	-Iinclude
 LDFLAGS=-mmcu=$(MCU)
-PORT=/dev/tty.usbmodem11201
+PORT ?= $(firstword $(wildcard /dev/tty.usbmodem* /dev/tty.usbserial*))
 
 BIN=avrdemo
 SOURCES=main.c \
@@ -25,7 +25,7 @@ SOURCES=main.c \
 	src/keypad.c \
 	src/mfrc522.c \
 	src/i2c.c \
-	src/rtc.c \
+	src/ds1307.c \
 	src/buzzer.c \
 	src/spi.c \
 	src/shift_register.c \
@@ -54,7 +54,13 @@ $(HEX): $(ELF)
 	$(OBJDUMP) -h -S -s $< > $@
 
 isp: $(HEX)
+	@test -n "$(PORT)" || (echo "No Arduino serial port found. Run 'make ports'." && exit 1)
 	$(OBJISP) -F -V -c arduino -p $(MCU) -P $(PORT) -U flash:w:$<
+
+flash: isp
+
+ports:
+	@ls /dev/tty.* 2>/dev/null || echo "No serial ports found"
 
 clean:
 	rm -f $(ELF) $(HEX) $(MAP) $(OBJS) $(OBJS:.o=.d)
@@ -62,4 +68,4 @@ clean:
 
 -include $(OBJS:.o=.d)
 
-.PHONY: all clean isp
+.PHONY: all clean isp flash ports

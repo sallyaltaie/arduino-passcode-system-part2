@@ -62,7 +62,7 @@
     [ "sr1:GND", "bb1:bn.6", "black", [ "v0" ] ],
     [ "sr1:OE", "bb1:bn.2", "black", [ "v-8.4", "h-86.4", "v96", "h86.4" ] ],
     [ "sr1:MR", "bb1:bp.7", "red", [ "v-46.8", "h19.2" ] ],
-    [ "sr1:VCC", "bb1:bn.8", "red", [ "v-56.4", "h96" ] ],
+    [ "sr1:VCC", "bb1:bp.8", "red", [ "v-56.4", "h96" ] ],
     [ "sr1:DS", "bb1:14b.g", "white", [ "v0" ] ],
     [ "sr1:SHCP", "bb1:12b.h", "green", [ "v-18", "h57.6" ] ],
     [ "sr1:STCP", "uno:2", "blue", [ "v-27.6", "h178.3" ] ],
