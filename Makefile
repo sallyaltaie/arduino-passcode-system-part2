@@ -9,7 +9,7 @@ CFLAGS=-Wall -Wextra -Wundef -pedantic \
 	-Os -g -DF_CPU=16000000UL -mmcu=$(MCU) -DBAUD=9600 \
 	-Iinclude
 LDFLAGS=-mmcu=$(MCU)
-PORT ?= $(firstword $(wildcard /dev/tty.usbmodem* /dev/tty.usbserial*))
+PORT=/dev/tty.usbmodem11201
 
 BIN=avrdemo
 SOURCES=main.c \
